@@ -177,7 +177,6 @@ class Api
         );
     }
 
-
     /**
      * @param array $parameters
      * @return string
