@@ -55,13 +55,13 @@ class Api
         $client->setTimeout($this->timeout);
         $client->send($request, $response);
 
-        if($response->getStatusCode() !== 200) {
+        if ($response->getStatusCode() !== 200) {
             throw new CommunicationException("Can't load idealbanklist from Adyen.");
         }
 
         $banks = array();
         $xml = new \SimpleXMLElement($response->getContent());
-        foreach($xml->bank as $bank) {
+        foreach ($xml->bank as $bank) {
             $banks[(string) $bank->bank_id] = (string) $bank->bank_name;
         }
 
@@ -70,7 +70,7 @@ class Api
 
     public function start($id, $amount, $currency, $returnUrl, $method, $bank = null)
     {
-        if($method === 'adyen_ideal') {
+        if ($method === 'adyen_ideal') {
             return $this->startIdeal($id, $amount, $currency, $returnUrl, $bank);
         }
 
@@ -91,7 +91,7 @@ class Api
         $parameters['paymentAmount']     = $amount * 100;
         $parameters['currencyCode']      = $currency;
         $parameters['shipBeforeDate']    = date('Y-m-d', strtotime('+1 hour'));
-        $parameters['merchantReference'] = $id;
+        $parameters['merchantReference'] = $this->getMrbMerchantReference($id);
         $parameters['skinCode']          = $this->skinCode;
         $parameters['merchantAccount']   = $this->merchantAccount;
         $parameters['sessionValidity']   = date(DATE_ATOM, strtotime('+1 hour'));
@@ -125,7 +125,7 @@ class Api
         $parameters['paymentAmount']       = $amount * 100;
         $parameters['currencyCode']        = $currency;
         $parameters['shipBeforeDate']      = date('Y-m-d', strtotime('+1 hour'));
-        $parameters['merchantReference']   = $id;
+        $parameters['merchantReference']   = $this->getMrbMerchantReference($id);
         $parameters['skinCode']            = $this->skinCode;
         $parameters['merchantAccount']     = $this->merchantAccount;
         $parameters['sessionValidity']     = date(DATE_ATOM, strtotime('+1 hour'));
@@ -145,7 +145,7 @@ class Api
         /**
          * Convert method to adyen methodname
          */
-        switch($method) {
+        switch ($method) {
             case 'adyen_mister_cash':
                 $parameters['allowedMethods'] = 'bcmc';
                 $parameters['countryCode'] = 'BE';
@@ -190,12 +190,12 @@ class Api
             'deliveryAddressType', 'offset');
 
         $data = array();
-        foreach($keys AS $key) {
-            if(isset($parameters[$key])) {
+        foreach ($keys as $key) {
+            if (isset($parameters[$key])) {
                 $data[] = $parameters[$key];
             }
         }
-        
+
         return base64_encode(hash_hmac('sha1', implode($data), $this->secretKey, true));
     }
 
@@ -204,10 +204,27 @@ class Api
      */
     public function getNotification()
     {
-        if($this->request->getMethod() === 'POST') {
+        if ($this->request->getMethod() === 'POST') {
             return Notification::createFromRequest($this->request->request);
         }
 
         return Notification::createFromQuery($this->request->query, $this->secretKey);
+    }
+
+    /**
+     * @param int    $id
+     * @return string
+     */
+    private function getMrbMerchantReference($id)
+    {
+        $session = $this->request->getSession();
+        $sessionCheckout = $session->get('checkout');
+
+        if (isset($sessionCheckout) && $sessionCheckout != null && isset($sessionCheckout['merchantReference'])) {
+            return '#' . $id . ' ' . $sessionCheckout['merchantReference'];
+        }
+        exit();
+
+        return $id;
     }
 }
