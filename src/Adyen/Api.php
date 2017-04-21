@@ -222,7 +222,6 @@ class Api
         if (isset($sessionCheckout) && $sessionCheckout != null && isset($sessionCheckout['merchantReference'])) {
             return '#' . $id . ' ' . $sessionCheckout['merchantReference'];
         }
-        exit();
 
         return $id;
     }
