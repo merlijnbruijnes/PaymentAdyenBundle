@@ -217,7 +217,7 @@ class Api
     private function getMrbMerchantReference($id)
     {
         $session = $this->request->getSession();
-        $sessionCheckout = $session->get('checkout');
+        $sessionCheckout = $session->get('payment');
 
         if (isset($sessionCheckout) && $sessionCheckout != null && isset($sessionCheckout['merchantReference'])) {
             return '#' . $id . ' ' . $sessionCheckout['merchantReference'];
